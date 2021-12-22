@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 from efficientnet_pytorch import EfficientNet
 import matplotlib.pyplot as plt
+from torchvision.models.resnet import resnet152
 
 from fineset import *
 
@@ -15,6 +16,7 @@ def train(model, train_loader, criterion, optimizer, epoch):
     for batch_idx, (input, label) in enumerate(train_loader):
 
         input = input.to(DEVICE)
+        label = label.to(DEVICE)
         optimizer.zero_grad()
         output = model(input)
         loss = criterion(output, label)
@@ -42,10 +44,23 @@ if __name__ == '__main__':
     EPOCHS = 30
 
     #モデルのロード
+    #EfficientNetのロード
     #model = EfficientNet.from_pretrained('efficientnet-b7') #Pretrained_modelのインポート
-    model = models.resnet152(pretrained=True)
-    num_ftrs = model._fc.in_features #全結合層の名前は"_fc"となっています
-    model._fc = nn.Linear(num_ftrs, 10)
+    #num_ftrs = model._fc.in_features #全結合層の名前は"_fc"となっています
+    #model._fc = nn.Linear(num_ftrs, 10)
+
+    #resnetのロード
+    #resnet152 = models.resnet152(pretrained=True)
+    #num_ftrs = resnet152.fc.in_features
+    #resnet152.fc = nn.Linear(num_ftrs, 10)
+    #model = resnet152
+    
+    #vgg19のロード
+    vgg19 = models.vgg19(pretrained=True)
+    num_ftrs = vgg19.classifier[6].in_features
+    vgg19.fc = nn.Linear(num_ftrs, 10)
+    model = vgg19
+
     model = model.to(DEVICE)
 
     #freeze layers except last layer
