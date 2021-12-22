@@ -10,6 +10,7 @@ from PIL import Image
 from torchvision.transforms import transforms
 from torch.utils.data import Dataset,DataLoader
 from torchvision import models, transforms
+from efficientnet_pytorch import EfficientNet
 
 def make_datapath_dic(categori):
     root_path = './imagenet_c/query/' + categori
@@ -114,21 +115,36 @@ for i in range(10):
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     #保存先
-    save_dir = "./memory_bank(b7)/target(3)/query"
-    #save_dir = "./memory_bank(b7)/target(3)/search"
+    save_dir = "./memory_bank(resnet)/target(3)/query"
+    #save_dir = "./memory_bank(resnet)/target(3)/search"
 
     #読み込む画像確認
     #image_show(test_loader,1)
 
     #モデルの定義
     #finetuningのload
-    model = models.resnet18(pretrained=True)
-    model.fc = nn.Linear(512,10)
-    model_path = "fine(flickr500)0.25387662028272945.pth"
-    #device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    #model.load_state_dict(torch.load(model_path, map_location=device))
+    model = models.resnet152(pretrained=True)
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Linear(num_ftrs,10)
+    model_path = "/home/fine/ex1/FT/resnet3.pth"
+    
+    #model = EfficientNet.from_pretrained('efficientnet-b7', include_top = False)
+    #num_ftrs = model._fc.in_features
+    #model._fc = nn.Linear(num_ftrs, 10)
+    #model_path = "/home/fine/ex1/FT/b73.pth"
+    
+    #densenet161 = models.densenet161(pretrained=True)
+    #num_ftrs = densenet161.classifier.in_features
+    #densenet161.classifier = nn.Linear(num_ftrs, 10)
+    #print(densenet161)
+    #model_path = "/home/fine/ex1/FT/densenet3.pth"
+    #model = densenet161
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model.load_state_dict(torch.load(model_path, map_location=device))
     model = nn.Sequential(*list(model.children())[:-1])
-    #print(model)
+    #model.classifier = nn.Identity()
+    print(model)
 
     model.eval()
     with torch.no_grad():
@@ -136,10 +152,11 @@ for i in range(10):
             metric = model(anchor).detach().cpu().numpy()
             #imagenet,finetuningの場合
             metric = metric.reshape(metric.shape[0], metric.shape[1])
+            #metric = metric.reshape(metric.shape[0], metric.shape[1], metric.shape[2])
             #特徴量を保存
             metric = metric[0]
             metric / np.linalg.norm(metric)  # Normalize
             path =  os.path.splitext(os.path.basename(train_dic[i][0]))[0]
             feature_path = Path( save_dir ) / ( path + ".npy")  # e.g., ./static/feature/xxx.npy
-            #print(metric.shape)
+            print(metric.shape)
             np.save(feature_path, metric)
